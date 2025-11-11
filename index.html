@@ -628,11 +628,18 @@
                 const forme = ["Cerchio", "Quadrato", "Triangolo", "Rettangolo"];
                 const colori = ['red', 'blue', 'green', 'orange'];
                 
-                // Crea 4 forme di dimensioni diverse
-                const dimensioni = [20, 30, 40, 50];
+                // Crea 4 forme di dimensioni diverse (ridotte per mobile)
+                const dimensioni = [15, 22, 29, 36];
                 
-                for (let i = 0; i < 4; i++) {
-                    const x = 50 + i * 80;
+                // Calcola dimensioni adattive per mobile
+                const numOggetti = 4;
+                const oggettoWidth = Math.min(60, this.canvas.width * 0.18);
+                const spacing = Math.min(15, this.canvas.width * 0.05);
+                const totalWidth = numOggetti * oggettoWidth + (numOggetti - 1) * spacing;
+                const startX = (this.canvas.width - totalWidth) / 2;
+                
+                for (let i = 0; i < numOggetti; i++) {
+                    const x = startX + i * (oggettoWidth + spacing);
                     const y = this.canvas.height * 0.4;
                     const dimensione = dimensioni[i];
                     const formaTipo = forme[Math.floor(Math.random() * forme.length)];
@@ -670,14 +677,21 @@
                 // Crea 4 gruppi con numerosità diverse (1-4 elementi)
                 const numerosita = [1, 2, 3, 4];
                 
-                for (let i = 0; i < 4; i++) {
-                    const x = 50 + i * 90;
+                // Calcola dimensioni adattive per mobile
+                const numOggetti = 4;
+                const oggettoWidth = Math.min(55, this.canvas.width * 0.16);
+                const spacing = Math.min(12, this.canvas.width * 0.04);
+                const totalWidth = numOggetti * oggettoWidth + (numOggetti - 1) * spacing;
+                const startX = (this.canvas.width - totalWidth) / 2;
+                
+                for (let i = 0; i < numOggetti; i++) {
+                    const x = startX + i * (oggettoWidth + spacing);
                     const y = this.canvas.height * 0.4;
                     const numElementi = numerosita[i];
                     const formaTipo = forme[Math.floor(Math.random() * forme.length)];
                     const colore = colori[Math.floor(Math.random() * colori.length)];
                     
-                    const gruppo = new GruppoOggetti(x, y, numElementi, formaTipo, colore);
+                    const gruppo = new GruppoOggetti(x, y, numElementi, formaTipo, colore, oggettoWidth);
                     gruppo.numerosita = numElementi;
                     this.oggettiOrdinamento.push(gruppo);
                     this.ordinamentoCorrente.push(numElementi);
@@ -694,10 +708,26 @@
                     [this.oggettiOrdinamento[j], this.oggettiOrdinamento[i]];
                 }
                 
-                // Riposiziona gli oggetti mescolati
+                // Riposiziona gli oggetti mescolati con dimensioni adattive
+                const numOggetti = this.oggettiOrdinamento.length;
+                const isForme = this.ordinamentoSelezionato === "forme";
+                const oggettoWidth = isForme ? 
+                    Math.min(60, this.canvas.width * 0.18) : 
+                    Math.min(55, this.canvas.width * 0.16);
+                const spacing = isForme ? 
+                    Math.min(15, this.canvas.width * 0.05) : 
+                    Math.min(12, this.canvas.width * 0.04);
+                const totalWidth = numOggetti * oggettoWidth + (numOggetti - 1) * spacing;
+                const startX = (this.canvas.width - totalWidth) / 2;
+                
                 this.oggettiOrdinamento.forEach((oggetto, index) => {
-                    oggetto.x = 50 + index * (this.ordinamentoSelezionato === "forme" ? 80 : 90);
+                    oggetto.x = startX + index * (oggettoWidth + spacing);
                     oggetto.y = this.canvas.height * 0.4;
+                    
+                    // Aggiorna anche la larghezza per i gruppi
+                    if (!isForme) {
+                        oggetto.larghezza = oggettoWidth;
+                    }
                 });
             }
 
@@ -1078,15 +1108,15 @@
         }
 
         class GruppoOggetti {
-            constructor(x, y, numerosita, forma, colore) {
+            constructor(x, y, numerosita, forma, colore, larghezza = 55) {
                 this.x = x;
                 this.y = y;
                 this.numerosita = numerosita;
                 this.forma = forma;
                 this.colore = colore;
                 this.selezionato = false;
-                this.larghezza = 70;
-                this.altezza = 70;
+                this.larghezza = larghezza;
+                this.altezza = larghezza;
             }
 
             controllaClick(mx, my) {
@@ -1103,10 +1133,11 @@
                 ctx.lineWidth = this.selezionato ? 3 : 2;
                 ctx.strokeRect(this.x, this.y, this.larghezza, this.altezza);
                 
-                // Disegna gli oggetti nel gruppo
-                const spacing = 15;
-                let currentX = this.x + 10;
-                let currentY = this.y + 25;
+                // Disegna gli oggetti nel gruppo (ridimensionati per mobile)
+                const spacing = this.larghezza * 0.25;
+                const oggettoSize = this.larghezza * 0.15;
+                let currentX = this.x + this.larghezza * 0.15;
+                let currentY = this.y + this.altezza * 0.35;
                 
                 for (let i = 0; i < this.numerosita; i++) {
                     ctx.fillStyle = this.colore;
@@ -1114,34 +1145,34 @@
                     switch(this.forma) {
                         case "Cerchio":
                             ctx.beginPath();
-                            ctx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
+                            ctx.arc(currentX, currentY, oggettoSize, 0, 2 * Math.PI);
                             ctx.fill();
                             break;
                         case "Quadrato":
-                            ctx.fillRect(currentX - 6, currentY - 6, 12, 12);
+                            ctx.fillRect(currentX - oggettoSize, currentY - oggettoSize, oggettoSize * 2, oggettoSize * 2);
                             break;
                         case "Triangolo":
                             ctx.beginPath();
-                            ctx.moveTo(currentX, currentY - 6);
-                            ctx.lineTo(currentX - 6, currentY + 6);
-                            ctx.lineTo(currentX + 6, currentY + 6);
+                            ctx.moveTo(currentX, currentY - oggettoSize);
+                            ctx.lineTo(currentX - oggettoSize, currentY + oggettoSize);
+                            ctx.lineTo(currentX + oggettoSize, currentY + oggettoSize);
                             ctx.closePath();
                             ctx.fill();
                             break;
                     }
                     
                     currentX += spacing;
-                    if (currentX > this.x + this.larghezza - 15) {
-                        currentX = this.x + 10;
-                        currentY += 20;
+                    if (currentX > this.x + this.larghezza - this.larghezza * 0.2) {
+                        currentX = this.x + this.larghezza * 0.15;
+                        currentY += this.altezza * 0.3;
                     }
                 }
                 
                 // Mostra il numero di elementi
                 ctx.fillStyle = '#495057';
-                ctx.font = 'bold 14px Arial';
+                ctx.font = 'bold ' + (this.larghezza * 0.2) + 'px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(this.numerosita, this.x + this.larghezza / 2, this.y + this.altezza - 8);
+                ctx.fillText(this.numerosita, this.x + this.larghezza / 2, this.y + this.altezza - this.altezza * 0.15);
             }
         }
 
