@@ -553,7 +553,87 @@
                 }
             }
 
-            // ... (altri metodi rimangono simili, ma con dimensioni adattate per mobile)
+            identificaFigura(x, y) {
+                for (let i = 0; i < this.figure.length; i++) {
+                    const figura = this.figure[i];
+                    if (!figura.identificata && figura.controllaClick(x, y)) {
+                        const formaObiettivo = this.obiettivi[this.livelloRiconoscimento][0];
+                        const coloreObiettivo = this.getColoreFromNome(this.obiettivi[this.livelloRiconoscimento][1]);
+                        
+                        if (figura.getNome() === formaObiettivo && figura.colore === coloreObiettivo) {
+                            figura.identificata = true;
+                            this.figureTrovate++;
+                            
+                            this.showModal("Corretto!", `Hai trovato un ${formaObiettivo.toLowerCase()} ${this.getNomeColore(coloreObiettivo).toLowerCase()}!`);
+                            
+                            if (this.figureTrovate >= this.figureDaTrovare) {
+                                this.livelloRiconoscimento++;
+                                if (this.livelloRiconoscimento < this.obiettivi.length) {
+                                    setTimeout(() => {
+                                        this.avviaNuovoObiettivo();
+                                    }, 1000);
+                                } else {
+                                    this.showModal("Complimenti!", "Hai completato tutti i livelli di riconoscimento!");
+                                    this.avviaModalitaOrdinamento();
+                                }
+                            }
+                        } else {
+                            this.showModal("Attenzione", `Questa è un ${figura.getNome().toLowerCase()} ${this.getNomeColore(figura.colore).toLowerCase()}, non un ${formaObiettivo.toLowerCase()} ${this.getNomeColore(coloreObiettivo).toLowerCase()}`);
+                        }
+                        this.render();
+                        break;
+                    }
+                }
+            }
+
+            avviaModalitaOrdinamento() {
+                this.modalitaRiconoscimento = false;
+                this.modalitaOrdinamento = true;
+                this.livelloOrdinamento = 0;
+                this.inizializzaOrdinamento();
+            }
+
+            inizializzaOrdinamento() {
+                this.oggettiOrdinamento = [];
+                const numeri = [1, 2, 3, 4, 5];
+                
+                // Mescola i numeri
+                for (let i = numeri.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [numeri[i], numeri[j]] = [numeri[j], numeri[i]];
+                }
+                
+                // Crea oggetti per l'ordinamento
+                const areaWidth = this.canvas.width;
+                const areaHeight = this.canvas.height * 0.7;
+                const oggettoWidth = Math.min(areaWidth * 0.15, 60);
+                const oggettoHeight = Math.min(areaHeight * 0.15, 60);
+                const spaziatura = oggettoWidth * 0.3;
+                
+                const startX = (areaWidth - (numeri.length * oggettoWidth + (numeri.length - 1) * spaziatura)) / 2;
+                const startY = areaHeight * 0.3;
+                
+                for (let i = 0; i < numeri.length; i++) {
+                    const x = startX + i * (oggettoWidth + spaziatura);
+                    const y = startY;
+                    this.oggettiOrdinamento.push(new OggettoOrdinamento(x, y, oggettoWidth, oggettoHeight, numeri[i]));
+                }
+                
+                this.storyText.textContent = "Ordina i numeri dal più piccolo al più grande";
+                this.levelInfo.textContent = "Ordinamento";
+                this.render();
+            }
+
+            gestisciClickOrdinamento(x, y) {
+                for (let i = 0; i < this.oggettiOrdinamento.length; i++) {
+                    const obj = this.oggettiOrdinamento[i];
+                    if (obj.controllaClick(x, y)) {
+                        // Logica di ordinamento
+                        this.showModal("Ordinamento", `Hai cliccato sul numero ${obj.valore}`);
+                        break;
+                    }
+                }
+            }
 
             perlustraClick(x, y) {
                 let stellaTrovata = false;
@@ -712,8 +792,6 @@
             }
         }
 
-        // ... (altre classi Cerchio, Quadrato, etc. rimangono simili ma con dimensioni ridotte)
-
         class Cerchio {
             constructor(x, y, raggio, colore) {
                 this.x = x;
@@ -764,9 +842,22 @@
                 this.x = x; this.y = y; this.base = base; this.altezza = base * 0.866; this.colore = colore; this.identificata = false;
             }
             controllaClick(mx, my) {
-                return mx >= this.x && mx <= this.x + this.base && 
-                       my >= this.y + this.altezza - (this.altezza * (mx - this.x) / this.base) && 
-                       my <= this.y + this.altezza;
+                // Calcola le coordinate dei vertici del triangolo
+                const v1x = this.x;
+                const v1y = this.y + this.altezza;
+                const v2x = this.x + this.base / 2;
+                const v2y = this.y;
+                const v3x = this.x + this.base;
+                const v3y = this.y + this.altezza;
+                
+                // Calcola le aree dei tre triangoli formati dal punto e dai vertici
+                const areaOrig = Math.abs((v2x - v1x) * (v3y - v1y) - (v3x - v1x) * (v2y - v1y));
+                const area1 = Math.abs((v1x - mx) * (v2y - my) - (v2x - mx) * (v1y - my));
+                const area2 = Math.abs((v2x - mx) * (v3y - my) - (v3x - mx) * (v2y - my));
+                const area3 = Math.abs((v3x - mx) * (v1y - my) - (v1x - mx) * (v3y - my));
+                
+                // Il punto è all'interno se la somma delle aree è uguale all'area originale
+                return Math.abs(area1 + area2 + area3 - areaOrig) < 0.1;
             }
             disegna(ctx) {
                 ctx.fillStyle = this.colore;
@@ -794,6 +885,36 @@
             }
             calcolaArea() { return this.larghezza * this.altezza; }
             getNome() { return "Rettangolo"; }
+        }
+
+        class OggettoOrdinamento {
+            constructor(x, y, larghezza, altezza, valore) {
+                this.x = x;
+                this.y = y;
+                this.larghezza = larghezza;
+                this.altezza = altezza;
+                this.valore = valore;
+            }
+
+            controllaClick(mx, my) {
+                return mx >= this.x && mx <= this.x + this.larghezza && my >= this.y && my <= this.y + this.altezza;
+            }
+
+            disegna(ctx) {
+                // Disegna un rettangolo con il numero
+                ctx.fillStyle = '#4facfe';
+                ctx.fillRect(this.x, this.y, this.larghezza, this.altezza);
+                
+                ctx.strokeStyle = '#495057';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.x, this.y, this.larghezza, this.altezza);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold ' + (this.altezza * 0.5) + 'px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.valore, this.x + this.larghezza / 2, this.y + this.altezza / 2);
+            }
         }
 
         // Inizializza il gioco
