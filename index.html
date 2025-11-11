@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Viaggio Numeri">
+    <title>Il Viaggio dei Numeri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            width: 100%;
+            max-width: 500px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 1.4em;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .install-hint {
+            font-size: 0.8em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .story-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 2px solid #e9ecef;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        #storyText {
+            font-size: 1em;
+            text-align: center;
+            color: #495057;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            background: #e9ecef;
+            font-weight: bold;
+            color: #495057;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
+
+        .game-area {
+            flex: 1;
+            position: relative;
+            background: #c8f7c5;
+            overflow: hidden;
+            min-height: 200px;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            padding: 15px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            min-width: 140px;
+            font-weight: 600;
+        }
+
+        button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .modal h2 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .modal p {
+            color: #6c757d;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            font-size: 1em;
+        }
+
+        #modalClose {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+        }
+
+        .debug-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>Il Viaggio dei Numeri</h1>
+            <div class="install-hint">👆 Tocca ••• e "Aggiungi a Home"</div>
+        </div>
+        
+        <div class="story-container">
+            <div id="storyText">Benvenuto nel mondo magico! Trova 10 stelle nascoste cliccando su di esse.</div>
+        </div>
+        
+        <div class="stats">
+            <div id="starCount">Stelle: 0/10</div>
+            <div id="levelInfo">Livello: 1</div>
+        </div>
+        
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+            <div class="debug-info" id="debugInfo"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="nextBtn">Prossimo</button>
+            <button id="resetBtn">Ricomincia</button>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Messaggio</h2>
+            <p id="modalMessage"></p>
+            <button id="modalClose">OK</button>
+        </div>
+    </div>
+
+    <script>
+        class ViaggioDeiNumeri {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.storyText = document.getElementById('storyText');
+                this.starCount = document.getElementById('starCount');
+                this.levelInfo = document.getElementById('levelInfo');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.modal = document.getElementById('messageModal');
+                this.modalTitle = document.getElementById('modalTitle');
+                this.modalMessage = document.getElementById('modalMessage');
+                this.modalClose = document.getElementById('modalClose');
+                this.debugInfo = document.getElementById('debugInfo');
+
+                this.stories = [
+                    "Benvenuto nel mondo magico! Trova 10 stelle nascoste cliccando su di esse.",
+                    "Hai trovato una stella! Continua a cercare."
+                ];
+                
+                this.obiettivi = [
+                    ["Triangolo", "Blu"],
+                    ["Cerchio", "Rosso"],
+                    ["Quadrato", "Verde"],
+                    ["Rettangolo", "Arancione"],
+                    ["Triangolo", "Rosso"],
+                    ["Cerchio", "Blu"]
+                ];
+
+                this.stage = 0;
+                this.stelleRaccolte = 0;
+                this.totaleStelle = 10;
+                this.livelloCompletato = false;
+                this.modalitaRiconoscimento = false;
+                this.modalitaOrdinamento = false;
+                this.livelloRiconoscimento = 0;
+                this.livelloOrdinamento = 0;
+                this.figureTrovate = 0;
+                this.figureDaTrovare = 0;
+
+                this.stelle = [];
+                this.figure = [];
+                this.oggettiOrdinamento = [];
+
+                // Flag per debug
+                this.debugMode = true;
+
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.resizeCanvas();
+                this.initStelle(this.totaleStelle);
+                this.render();
+                
+                if (this.debugMode) {
+                    this.debugInfo.style.display = 'block';
+                    this.updateDebugInfo();
+                }
+            }
+
+            resizeCanvas() {
+                const container = this.canvas.parentElement;
+                const rect = container.getBoundingClientRect();
+                
+                // Imposta dimensioni REALI del canvas
+                this.canvas.width = Math.floor(rect.width);
+                this.canvas.height = Math.floor(rect.height);
+                
+                // Forza le dimensioni CSS
+                this.canvas.style.width = rect.width + 'px';
+                this.canvas.style.height = rect.height + 'px';
+                
+                console.log("Canvas resized to:", this.canvas.width, "x", this.canvas.height);
+                
+                if (this.debugMode) {
+                    this.updateDebugInfo();
+                }
+            }
+
+            setupEventListeners() {
+                // Ridimensionamento
+                window.addEventListener('resize', () => {
+                    setTimeout(() => {
+                        this.resizeCanvas();
+                        if (!this.livelloCompletato && !this.modalitaRiconoscimento && !this.modalitaOrdinamento) {
+                            this.initStelle(this.totaleStelle);
+                        }
+                        this.render();
+                    }, 100);
+                });
+
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => {
+                        this.resizeCanvas();
+                        if (!this.livelloCompletato && !this.modalitaRiconoscimento && !this.modalitaOrdinamento) {
+                            this.initStelle(this.totaleStelle);
+                        }
+                        this.render();
+                    }, 300);
+                });
+
+                // Eventi di input
+                this.setupInputEvents();
+
+                this.nextBtn.addEventListener('click', () => {
+                    this.handleNextButton();
+                });
+
+                this.resetBtn.addEventListener('click', () => {
+                    this.resetGame();
+                });
+
+                this.modalClose.addEventListener('click', () => {
+                    this.hideModal();
+                });
+
+                // Inizializza al click per iOS
+                document.addEventListener('click', () => {
+                    this.ctx.fillStyle = '#c8f7c5';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.render();
+                }, { once: true });
+            }
+
+            setupInputEvents() {
+                const handleTap = (x, y) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    
+                    const canvasX = (x - rect.left) * scaleX;
+                    const canvasY = (y - rect.top) * scaleY;
+
+                    if (this.debugMode) {
+                        this.debugInfo.innerHTML = `Tap: ${Math.round(canvasX)},${Math.round(canvasY)}<br>Stars: ${this.stelle.length}`;
+                    }
+
+                    if (this.modalitaOrdinamento) {
+                        this.gestisciClickOrdinamento(canvasX, canvasY);
+                    } else if (this.modalitaRiconoscimento) {
+                        this.identificaFigura(canvasX, canvasY);
+                    } else {
+                        this.perlustraClick(canvasX, canvasY);
+                    }
+                };
+
+                // Click mouse
+                this.canvas.addEventListener('click', (e) => {
+                    handleTap(e.clientX, e.clientY);
+                });
+
+                // Touch
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (e.touches.length === 1) {
+                        handleTap(e.touches[0].clientX, e.touches[0].clientY);
+                    }
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                }, { passive: false });
+            }
+
+            updateDebugInfo() {
+                if (this.debugMode) {
+                    this.debugInfo.innerHTML = 
+                        `Canvas: ${this.canvas.width}x${this.canvas.height}<br>` +
+                        `Stars: ${this.stelle.length}<br>` +
+                        `Mode: ${this.modalitaRiconoscimento ? 'Figure' : this.modalitaOrdinamento ? 'Ordina' : 'Stelle'}`;
+                }
+            }
+
+            initStelle(numero) {
+                this.stelle = [];
+                const margin = 50;
+                const safeWidth = this.canvas.width - 2 * margin;
+                const safeHeight = this.canvas.height - 2 * margin;
+                
+                console.log("Creating stars in area:", safeWidth, "x", safeHeight);
+
+                for (let i = 0; i < numero; i++) {
+                    const x = margin + Math.random() * safeWidth;
+                    const y = margin + Math.random() * safeHeight;
+                    this.stelle.push(new Stella(x, y, 25));
+                }
+                
+                console.log("Created", this.stelle.length, "stars");
+                if (this.debugMode) this.updateDebugInfo();
+            }
+
+            handleNextButton() {
+                if (!this.livelloCompletato) {
+                    this.stage++;
+                    if (this.stage < this.stories.length) {
+                        this.storyText.textContent = this.stories[this.stage];
+                    } else {
+                        this.storyText.textContent = "Hai completato il livello!";
+                        this.nextBtn.disabled = true;
+                    }
+                } else {
+                    this.avviaRiconoscimentoFigure();
+                    this.nextBtn.disabled = true;
+                }
+                this.render();
+            }
+
+            avviaRiconoscimentoFigure() {
+                this.modalitaRiconoscimento = true;
+                this.livelloRiconoscimento = 0;
+                this.avviaNuovoObiettivo();
+            }
+
+            avviaNuovoObiettivo() {
+                if (this.livelloRiconoscimento < this.obiettivi.length) {
+                    this.figure = [];
+                    this.figureTrovate = 0;
+                    this.figureDaTrovare = 0;
+
+                    const formaObiettivo = this.obiettivi[this.livelloRiconoscimento][0];
+                    const coloreObiettivo = this.obiettivi[this.livelloRiconoscimento][1];
+                    const coloreObiettivoColor = this.getColoreFromNome(coloreObiettivo);
+
+                    const numFigure = 6;
+                    let figureObiettivoCreate = 0;
+
+                    // Crea figure obiettivo
+                    for (let i = 0; i < 2; i++) {
+                        const x = 40 + Math.random() * (this.canvas.width - 120);
+                        const y = 40 + Math.random() * (this.canvas.height - 120);
+                        
+                        const figura = this.creaFiguraObiettivo(formaObiettivo, x, y, coloreObiettivoColor);
+                        if (figura) {
+                            this.figure.push(figura);
+                            figureObiettivoCreate++;
+                            this.figureDaTrovare++;
+                        }
+                    }
+
+                    // Crea altre figure casuali
+                    for (let i = figureObiettivoCreate; i < numFigure; i++) {
+                        const x = 40 + Math.random() * (this.canvas.width - 120);
+                        const y = 40 + Math.random() * (this.canvas.height - 120);
+                        const tipo = Math.floor(Math.random() * 4);
+                        
+                        const coloriDisponibili = ['red', 'blue', 'green', 'orange', 'magenta', 'cyan'];
+                        let coloreCasuale = coloriDisponibili[Math.floor(Math.random() * coloriDisponibili.length)];
+                        
+                        const formaCasuale = this.getFormaFromTipo(tipo);
+                        if (formaCasuale === formaObiettivo && coloreCasuale === coloreObiettivoColor) {
+                            do {
+                                coloreCasuale = coloriDisponibili[Math.floor(Math.random() * coloriDisponibili.length)];
+                            } while (coloreCasuale === coloreObiettivoColor);
+                        }
+                        
+                        const figura = this.creaFiguraFromTipo(tipo, x, y, coloreCasuale);
+                        if (figura) {
+                            this.figure.push(figura);
+                        }
+                    }
+
+                    this.storyText.innerHTML = `Trova i <b>${formaObiettivo.toLowerCase()} ${coloreObiettivo.toLowerCase()}</b>`;
+                    this.levelInfo.textContent = `Livello: ${this.livelloRiconoscimento + 1}`;
+                } else {
+                    this.avviaModalitaOrdinamento();
+                }
+                this.render();
+            }
+
+            creaFiguraObiettivo(forma, x, y, colore) {
+                const maxSize = Math.min(this.canvas.width, this.canvas.height) * 0.12;
+                
+                switch (forma) {
+                    case "Cerchio":
+                        return new Cerchio(x, y, 15 + Math.random() * 15, colore);
+                    case "Quadrato":
+                        return new Quadrato(x, y, 20 + Math.random() * 15, colore);
+                    case "Triangolo":
+                        return new Triangolo(x, y, 25 + Math.random() * 15, colore);
+                    case "Rettangolo":
+                        return new Rettangolo(x, y, 25 + Math.random() * 12, 18 + Math.random() * 8, colore);
+                    default:
+                        return null;
+                }
+            }
+
+            creaFiguraFromTipo(tipo, x, y, colore) {
+                switch (tipo) {
+                    case 0:
+                        return new Cerchio(x, y, 15 + Math.random() * 15, colore);
+                    case 1:
+                        return new Quadrato(x, y, 20 + Math.random() * 15, colore);
+                    case 2:
+                        return new Triangolo(x, y, 25 + Math.random() * 15, colore);
+                    case 3:
+                        return new Rettangolo(x, y, 25 + Math.random() * 12, 18 + Math.random() * 8, colore);
+                    default:
+                        return null;
+                }
+            }
+
+            getFormaFromTipo(tipo) {
+                switch (tipo) {
+                    case 0: return "Cerchio";
+                    case 1: return "Quadrato";
+                    case 2: return "Triangolo";
+                    case 3: return "Rettangolo";
+                    default: return "";
+                }
+            }
+
+            // ... (altri metodi rimangono simili, ma con dimensioni adattate per mobile)
+
+            perlustraClick(x, y) {
+                let stellaTrovata = false;
+                
+                for (const stella of this.stelle) {
+                    if (!stella.raccolta && stella.controllaClick(x, y)) {
+                        stella.raccolta = true;
+                        this.stelleRaccolte++;
+                        this.starCount.textContent = `Stelle: ${this.stelleRaccolte}/${this.totaleStelle}`;
+                        stellaTrovata = true;
+                        
+                        this.showModal("⭐ Stella trovata!", `Numero totale: ${this.stelleRaccolte}`);
+                        
+                        if (this.stelleRaccolte >= this.totaleStelle) {
+                            this.storyText.textContent = "Complimenti! Hai raccolto tutte le stelle! Clicca 'Prossimo' per continuare.";
+                            this.livelloCompletato = true;
+                            this.nextBtn.disabled = false;
+                        }
+                        break;
+                    }
+                }
+
+                if (stellaTrovata) {
+                    this.render();
+                }
+            }
+
+            render() {
+                // Pulisci il canvas con un colore solido
+                this.ctx.fillStyle = '#c8f7c5';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                if (this.modalitaOrdinamento) {
+                    this.ctx.fillStyle = '#fff0f0';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.oggettiOrdinamento.forEach(obj => obj.disegna(this.ctx));
+                } else if (this.modalitaRiconoscimento) {
+                    this.ctx.fillStyle = '#f0f0ff';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.figure.forEach(figura => figura.disegna(this.ctx));
+                } else {
+                    // Modalità stelle - disegna tutte le stelle
+                    this.stelle.forEach(stella => {
+                        if (!stella.raccolta) {
+                            stella.disegna(this.ctx);
+                        }
+                    });
+                }
+
+                if (this.debugMode) {
+                    this.updateDebugInfo();
+                }
+            }
+
+            showModal(title, message) {
+                this.modalTitle.textContent = title;
+                this.modalMessage.textContent = message;
+                this.modal.style.display = 'flex';
+            }
+
+            hideModal() {
+                this.modal.style.display = 'none';
+                this.render();
+            }
+
+            resetGame() {
+                this.stage = 0;
+                this.stelleRaccolte = 0;
+                this.livelloCompletato = false;
+                this.modalitaRiconoscimento = false;
+                this.modalitaOrdinamento = false;
+                this.livelloRiconoscimento = 0;
+                this.livelloOrdinamento = 0;
+                this.figureTrovate = 0;
+                this.figureDaTrovare = 0;
+
+                this.storyText.textContent = this.stories[0];
+                this.starCount.textContent = `Stelle: 0/${this.totaleStelle}`;
+                this.levelInfo.textContent = "Livello: 1";
+                this.nextBtn.disabled = false;
+
+                this.stelle = [];
+                this.figure = [];
+                this.oggettiOrdinamento = [];
+
+                this.initStelle(this.totaleStelle);
+                this.render();
+            }
+
+            getColoreFromNome(nomeColore) {
+                const colorMap = {
+                    "Rosso": "red", "Blu": "blue", "Verde": "green",
+                    "Arancione": "orange", "Magenta": "magenta", "Ciano": "cyan"
+                };
+                return colorMap[nomeColore] || "black";
+            }
+
+            getNomeColore(colore) {
+                const colorMap = {
+                    "red": "Rosso", "blue": "Blu", "green": "Verde",
+                    "orange": "Arancione", "magenta": "Magenta", "cyan": "Ciano"
+                };
+                return colorMap[colore] || "Sconosciuto";
+            }
+        }
+
+        class Stella {
+            constructor(x, y, dimensione = 25) {
+                this.x = x;
+                this.y = y;
+                this.raccolta = false;
+                this.dimensione = dimensione;
+            }
+
+            controllaClick(mx, my) {
+                const centerX = this.x + this.dimensione / 2;
+                const centerY = this.y + this.dimensione / 2;
+                const dist = Math.sqrt((mx - centerX) ** 2 + (my - centerY) ** 2);
+                return dist <= this.dimensione / 2;
+            }
+
+            disegna(ctx) {
+                if (this.raccolta) return;
+
+                const centerX = this.x + this.dimensione / 2;
+                const centerY = this.y + this.dimensione / 2;
+                const outerRadius = this.dimensione / 2;
+                const innerRadius = outerRadius * 0.4;
+                const spikes = 5;
+                
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                
+                // Stella gialla brillante
+                ctx.fillStyle = '#FFD700';
+                ctx.strokeStyle = '#FF8C00';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = 'rgba(255,215,0,0.5)';
+                ctx.shadowBlur = 5;
+                
+                ctx.beginPath();
+                for (let i = 0; i < spikes * 2; i++) {
+                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                    const angle = (Math.PI * i) / spikes;
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+
+        // ... (altre classi Cerchio, Quadrato, etc. rimangono simili ma con dimensioni ridotte)
+
+        class Cerchio {
+            constructor(x, y, raggio, colore) {
+                this.x = x;
+                this.y = y;
+                this.raggio = raggio;
+                this.colore = colore;
+                this.identificata = false;
+            }
+
+            controllaClick(mx, my) {
+                const dist = Math.sqrt((mx - (this.x + this.raggio)) ** 2 + (my - (this.y + this.raggio)) ** 2);
+                return dist <= this.raggio;
+            }
+
+            disegna(ctx) {
+                ctx.fillStyle = this.colore;
+                ctx.beginPath();
+                ctx.arc(this.x + this.raggio, this.y + this.raggio, this.raggio, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                if (this.identificata) {
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            }
+
+            calcolaArea() { return Math.PI * this.raggio * this.raggio; }
+            getNome() { return "Cerchio"; }
+        }
+
+        class Quadrato {
+            constructor(x, y, lato, colore) {
+                this.x = x; this.y = y; this.lato = lato; this.colore = colore; this.identificata = false;
+            }
+            controllaClick(mx, my) { return mx >= this.x && mx <= this.x + this.lato && my >= this.y && my <= this.y + this.lato; }
+            disegna(ctx) {
+                ctx.fillStyle = this.colore;
+                ctx.fillRect(this.x, this.y, this.lato, this.lato);
+                if (this.identificata) { ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeRect(this.x, this.y, this.lato, this.lato); }
+            }
+            calcolaArea() { return this.lato * this.lato; }
+            getNome() { return "Quadrato"; }
+        }
+
+        class Triangolo {
+            constructor(x, y, base, colore) {
+                this.x = x; this.y = y; this.base = base; this.altezza = base * 0.866; this.colore = colore; this.identificata = false;
+            }
+            controllaClick(mx, my) {
+                return mx >= this.x && mx <= this.x + this.base && 
+                       my >= this.y + this.altezza - (this.altezza * (mx - this.x) / this.base) && 
+                       my <= this.y + this.altezza;
+            }
+            disegna(ctx) {
+                ctx.fillStyle = this.colore;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + this.altezza);
+                ctx.lineTo(this.x + this.base / 2, this.y);
+                ctx.lineTo(this.x + this.base, this.y + this.altezza);
+                ctx.closePath();
+                ctx.fill();
+                if (this.identificata) { ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.stroke(); }
+            }
+            calcolaArea() { return (this.base * this.altezza) / 2; }
+            getNome() { return "Triangolo"; }
+        }
+
+        class Rettangolo {
+            constructor(x, y, larghezza, altezza, colore) {
+                this.x = x; this.y = y; this.larghezza = larghezza; this.altezza = altezza; this.colore = colore; this.identificata = false;
+            }
+            controllaClick(mx, my) { return mx >= this.x && mx <= this.x + this.larghezza && my >= this.y && my <= this.y + this.altezza; }
+            disegna(ctx) {
+                ctx.fillStyle = this.colore;
+                ctx.fillRect(this.x, this.y, this.larghezza, this.altezza);
+                if (this.identificata) { ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeRect(this.x, this.y, this.larghezza, this.altezza); }
+            }
+            calcolaArea() { return this.larghezza * this.altezza; }
+            getNome() { return "Rettangolo"; }
+        }
+
+        // Inizializza il gioco
+        window.addEventListener('load', () => {
+            new ViaggioDeiNumeri();
+        });
+
+        // Previeni comportamenti indesiderati
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
