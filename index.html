@@ -628,22 +628,22 @@
                 const forme = ["Cerchio", "Quadrato", "Triangolo", "Rettangolo"];
                 const colori = ['red', 'blue', 'green', 'orange'];
                 
-                // Crea 4 forme di dimensioni diverse (ridotte per mobile)
-                const dimensioni = [15, 22, 29, 36];
+                // Crea 4 forme con differenze di dimensione più evidenti
+                const dimensioni = [20, 35, 50, 65]; // Differenze più marcate
                 
                 // Calcola dimensioni adattive per mobile
                 const numOggetti = 4;
-                const oggettoWidth = Math.min(60, this.canvas.width * 0.18);
-                const spacing = Math.min(15, this.canvas.width * 0.05);
-                const totalWidth = numOggetti * oggettoWidth + (numOggetti - 1) * spacing;
+                const maxOggettoWidth = Math.min(70, this.canvas.width * 0.2);
+                const spacing = Math.min(10, this.canvas.width * 0.03);
+                const totalWidth = numOggetti * maxOggettoWidth + (numOggetti - 1) * spacing;
                 const startX = (this.canvas.width - totalWidth) / 2;
                 
                 for (let i = 0; i < numOggetti; i++) {
-                    const x = startX + i * (oggettoWidth + spacing);
+                    const x = startX + i * (maxOggettoWidth + spacing);
                     const y = this.canvas.height * 0.4;
                     const dimensione = dimensioni[i];
-                    const formaTipo = forme[Math.floor(Math.random() * forme.length)];
-                    const colore = colori[Math.floor(Math.random() * colori.length)];
+                    const formaTipo = forme[i]; // Usa forme diverse per ogni dimensione per maggiore chiarezza
+                    const colore = colori[i];
                     
                     let figura;
                     switch(formaTipo) {
@@ -657,11 +657,13 @@
                             figura = new Triangolo(x, y, dimensione, colore);
                             break;
                         case "Rettangolo":
-                            figura = new Rettangolo(x, y, dimensione, dimensione * 0.7, colore);
+                            figura = new Rettangolo(x, y, dimensione, dimensione * 0.8, colore);
                             break;
                     }
                     
                     figura.dimensioneOrdine = dimensione;
+                    // Aggiungi un indicatore di dimensione
+                    figura.indicatoreDimensione = dimensione;
                     this.oggettiOrdinamento.push(figura);
                     this.ordinamentoCorrente.push(dimensione);
                 }
@@ -672,15 +674,15 @@
 
             inizializzaOrdinamentoNumerosita() {
                 const forme = ["Cerchio", "Quadrato", "Triangolo"];
-                const colori = ['red', 'blue', 'green', 'orange', 'purple'];
+                const colori = ['red', 'blue', 'green', 'orange', 'purple', 'brown'];
                 
                 // Crea 4 gruppi con numerosità diverse (1-4 elementi)
                 const numerosita = [1, 2, 3, 4];
                 
                 // Calcola dimensioni adattive per mobile
                 const numOggetti = 4;
-                const oggettoWidth = Math.min(55, this.canvas.width * 0.16);
-                const spacing = Math.min(12, this.canvas.width * 0.04);
+                const oggettoWidth = Math.min(65, this.canvas.width * 0.18);
+                const spacing = Math.min(8, this.canvas.width * 0.02);
                 const totalWidth = numOggetti * oggettoWidth + (numOggetti - 1) * spacing;
                 const startX = (this.canvas.width - totalWidth) / 2;
                 
@@ -688,8 +690,8 @@
                     const x = startX + i * (oggettoWidth + spacing);
                     const y = this.canvas.height * 0.4;
                     const numElementi = numerosita[i];
-                    const formaTipo = forme[Math.floor(Math.random() * forme.length)];
-                    const colore = colori[Math.floor(Math.random() * colori.length)];
+                    const formaTipo = forme[i % forme.length]; // Alterna le forme
+                    const colore = colori[i % colori.length]; // Alterna i colori
                     
                     const gruppo = new GruppoOggetti(x, y, numElementi, formaTipo, colore, oggettoWidth);
                     gruppo.numerosita = numElementi;
@@ -711,22 +713,23 @@
                 // Riposiziona gli oggetti mescolati con dimensioni adattive
                 const numOggetti = this.oggettiOrdinamento.length;
                 const isForme = this.ordinamentoSelezionato === "forme";
-                const oggettoWidth = isForme ? 
-                    Math.min(60, this.canvas.width * 0.18) : 
-                    Math.min(55, this.canvas.width * 0.16);
+                const maxOggettoWidth = isForme ? 
+                    Math.min(70, this.canvas.width * 0.2) : 
+                    Math.min(65, this.canvas.width * 0.18);
                 const spacing = isForme ? 
-                    Math.min(15, this.canvas.width * 0.05) : 
-                    Math.min(12, this.canvas.width * 0.04);
-                const totalWidth = numOggetti * oggettoWidth + (numOggetti - 1) * spacing;
+                    Math.min(10, this.canvas.width * 0.03) : 
+                    Math.min(8, this.canvas.width * 0.02);
+                const totalWidth = numOggetti * maxOggettoWidth + (numOggetti - 1) * spacing;
                 const startX = (this.canvas.width - totalWidth) / 2;
                 
                 this.oggettiOrdinamento.forEach((oggetto, index) => {
-                    oggetto.x = startX + index * (oggettoWidth + spacing);
+                    oggetto.x = startX + index * (maxOggettoWidth + spacing);
                     oggetto.y = this.canvas.height * 0.4;
                     
                     // Aggiorna anche la larghezza per i gruppi
                     if (!isForme) {
-                        oggetto.larghezza = oggettoWidth;
+                        oggetto.larghezza = maxOggettoWidth;
+                        oggetto.altezza = maxOggettoWidth;
                     }
                 });
             }
@@ -974,6 +977,7 @@
                 this.colore = colore;
                 this.identificata = false;
                 this.selezionato = false;
+                this.indicatoreDimensione = null;
             }
 
             controllaClick(mx, my) {
@@ -992,6 +996,14 @@
                     ctx.lineWidth = this.selezionato ? 4 : 3;
                     ctx.stroke();
                 }
+                
+                // Aggiungi indicatore di dimensione sotto la forma
+                if (this.indicatoreDimensione) {
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.indicatoreDimensione, this.x + this.raggio, this.y + this.raggio * 2 + 20);
+                }
             }
 
             calcolaArea() { return Math.PI * this.raggio * this.raggio; }
@@ -1006,6 +1018,7 @@
                 this.colore = colore; 
                 this.identificata = false;
                 this.selezionato = false;
+                this.indicatoreDimensione = null;
             }
             
             controllaClick(mx, my) { 
@@ -1020,6 +1033,14 @@
                     ctx.strokeStyle = this.selezionato ? '#ff5722' : 'black';
                     ctx.lineWidth = this.selezionato ? 4 : 3;
                     ctx.strokeRect(this.x, this.y, this.lato, this.lato);
+                }
+                
+                // Aggiungi indicatore di dimensione
+                if (this.indicatoreDimensione) {
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.indicatoreDimensione, this.x + this.lato/2, this.y + this.lato + 20);
                 }
             }
             
@@ -1036,6 +1057,7 @@
                 this.colore = colore; 
                 this.identificata = false;
                 this.selezionato = false;
+                this.indicatoreDimensione = null;
             }
             
             controllaClick(mx, my) {
@@ -1071,6 +1093,14 @@
                     ctx.lineWidth = this.selezionato ? 4 : 3;
                     ctx.stroke();
                 }
+                
+                // Aggiungi indicatore di dimensione
+                if (this.indicatoreDimensione) {
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.indicatoreDimensione, this.x + this.base/2, this.y + this.altezza + 20);
+                }
             }
             
             calcolaArea() { return (this.base * this.altezza) / 2; }
@@ -1086,6 +1116,7 @@
                 this.colore = colore; 
                 this.identificata = false;
                 this.selezionato = false;
+                this.indicatoreDimensione = null;
             }
             
             controllaClick(mx, my) { 
@@ -1101,6 +1132,14 @@
                     ctx.lineWidth = this.selezionato ? 4 : 3;
                     ctx.strokeRect(this.x, this.y, this.larghezza, this.altezza);
                 }
+                
+                // Aggiungi indicatore di dimensione
+                if (this.indicatoreDimensione) {
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.indicatoreDimensione, this.x + this.larghezza/2, this.y + this.altezza + 20);
+                }
             }
             
             calcolaArea() { return this.larghezza * this.altezza; }
@@ -1108,7 +1147,7 @@
         }
 
         class GruppoOggetti {
-            constructor(x, y, numerosita, forma, colore, larghezza = 55) {
+            constructor(x, y, numerosita, forma, colore, larghezza = 65) {
                 this.x = x;
                 this.y = y;
                 this.numerosita = numerosita;
@@ -1168,11 +1207,17 @@
                     }
                 }
                 
-                // Mostra il numero di elementi
+                // Mostra il numero di elementi in grande
                 ctx.fillStyle = '#495057';
-                ctx.font = 'bold ' + (this.larghezza * 0.2) + 'px Arial';
+                ctx.font = 'bold ' + (this.larghezza * 0.25) + 'px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(this.numerosita, this.x + this.larghezza / 2, this.y + this.altezza - this.altezza * 0.15);
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.numerosita, this.x + this.larghezza / 2, this.y + this.altezza - this.altezza * 0.2);
+                
+                // Aggiungi etichetta "oggetti"
+                ctx.fillStyle = '#666';
+                ctx.font = 'bold ' + (this.larghezza * 0.12) + 'px Arial';
+                ctx.fillText("oggetti", this.x + this.larghezza / 2, this.y + this.altezza - this.altezza * 0.08);
             }
         }
 
