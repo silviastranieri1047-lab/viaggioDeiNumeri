@@ -284,6 +284,11 @@
                 this.figure = [];
                 this.oggettiOrdinamento = [];
 
+                // Nuove proprietà per l'ordinamento
+                this.ordinamentoSelezionato = null;
+                this.ordinamentoCorrente = [];
+                this.oggettiSelezionati = [];
+
                 // Flag per debug
                 this.debugMode = true;
 
@@ -595,43 +600,181 @@
 
             inizializzaOrdinamento() {
                 this.oggettiOrdinamento = [];
-                const numeri = [1, 2, 3, 4, 5];
+                this.ordinamentoSelezionato = null;
+                this.ordinamentoCorrente = [];
+                this.oggettiSelezionati = [];
                 
-                // Mescola i numeri
-                for (let i = numeri.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [numeri[i], numeri[j]] = [numeri[j], numeri[i]];
+                // Crea diversi tipi di ordinamento
+                const tipiOrdinamento = [
+                    { tipo: "forme", descrizione: "Ordina le forme dalla più piccola alla più grande" },
+                    { tipo: "numerosita", descrizione: "Ordina i gruppi dal meno numeroso al più numeroso" }
+                ];
+                
+                const tipoCasuale = tipiOrdinamento[Math.floor(Math.random() * tipiOrdinamento.length)];
+                this.ordinamentoSelezionato = tipoCasuale.tipo;
+                
+                if (this.ordinamentoSelezionato === "forme") {
+                    this.inizializzaOrdinamentoForme();
+                } else {
+                    this.inizializzaOrdinamentoNumerosita();
                 }
                 
-                // Crea oggetti per l'ordinamento
-                const areaWidth = this.canvas.width;
-                const areaHeight = this.canvas.height * 0.7;
-                const oggettoWidth = Math.min(areaWidth * 0.15, 60);
-                const oggettoHeight = Math.min(areaHeight * 0.15, 60);
-                const spaziatura = oggettoWidth * 0.3;
-                
-                const startX = (areaWidth - (numeri.length * oggettoWidth + (numeri.length - 1) * spaziatura)) / 2;
-                const startY = areaHeight * 0.3;
-                
-                for (let i = 0; i < numeri.length; i++) {
-                    const x = startX + i * (oggettoWidth + spaziatura);
-                    const y = startY;
-                    this.oggettiOrdinamento.push(new OggettoOrdinamento(x, y, oggettoWidth, oggettoHeight, numeri[i]));
-                }
-                
-                this.storyText.textContent = "Ordina i numeri dal più piccolo al più grande";
+                this.storyText.textContent = tipoCasuale.descrizione;
                 this.levelInfo.textContent = "Ordinamento";
                 this.render();
+            }
+
+            inizializzaOrdinamentoForme() {
+                const forme = ["Cerchio", "Quadrato", "Triangolo", "Rettangolo"];
+                const colori = ['red', 'blue', 'green', 'orange'];
+                
+                // Crea 4 forme di dimensioni diverse
+                const dimensioni = [20, 30, 40, 50];
+                
+                for (let i = 0; i < 4; i++) {
+                    const x = 50 + i * 80;
+                    const y = this.canvas.height * 0.4;
+                    const dimensione = dimensioni[i];
+                    const formaTipo = forme[Math.floor(Math.random() * forme.length)];
+                    const colore = colori[Math.floor(Math.random() * colori.length)];
+                    
+                    let figura;
+                    switch(formaTipo) {
+                        case "Cerchio":
+                            figura = new Cerchio(x, y, dimensione, colore);
+                            break;
+                        case "Quadrato":
+                            figura = new Quadrato(x, y, dimensione, colore);
+                            break;
+                        case "Triangolo":
+                            figura = new Triangolo(x, y, dimensione, colore);
+                            break;
+                        case "Rettangolo":
+                            figura = new Rettangolo(x, y, dimensione, dimensione * 0.7, colore);
+                            break;
+                    }
+                    
+                    figura.dimensioneOrdine = dimensione;
+                    this.oggettiOrdinamento.push(figura);
+                    this.ordinamentoCorrente.push(dimensione);
+                }
+                
+                // Mescola l'ordine
+                this.mescolaOggettiOrdinamento();
+            }
+
+            inizializzaOrdinamentoNumerosita() {
+                const forme = ["Cerchio", "Quadrato", "Triangolo"];
+                const colori = ['red', 'blue', 'green', 'orange', 'purple'];
+                
+                // Crea 4 gruppi con numerosità diverse (1-4 elementi)
+                const numerosita = [1, 2, 3, 4];
+                
+                for (let i = 0; i < 4; i++) {
+                    const x = 50 + i * 90;
+                    const y = this.canvas.height * 0.4;
+                    const numElementi = numerosita[i];
+                    const formaTipo = forme[Math.floor(Math.random() * forme.length)];
+                    const colore = colori[Math.floor(Math.random() * colori.length)];
+                    
+                    const gruppo = new GruppoOggetti(x, y, numElementi, formaTipo, colore);
+                    gruppo.numerosita = numElementi;
+                    this.oggettiOrdinamento.push(gruppo);
+                    this.ordinamentoCorrente.push(numElementi);
+                }
+                
+                // Mescola l'ordine
+                this.mescolaOggettiOrdinamento();
+            }
+
+            mescolaOggettiOrdinamento() {
+                for (let i = this.oggettiOrdinamento.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.oggettiOrdinamento[i], this.oggettiOrdinamento[j]] = 
+                    [this.oggettiOrdinamento[j], this.oggettiOrdinamento[i]];
+                }
+                
+                // Riposiziona gli oggetti mescolati
+                this.oggettiOrdinamento.forEach((oggetto, index) => {
+                    oggetto.x = 50 + index * (this.ordinamentoSelezionato === "forme" ? 80 : 90);
+                    oggetto.y = this.canvas.height * 0.4;
+                });
             }
 
             gestisciClickOrdinamento(x, y) {
                 for (let i = 0; i < this.oggettiOrdinamento.length; i++) {
                     const obj = this.oggettiOrdinamento[i];
                     if (obj.controllaClick(x, y)) {
-                        // Logica di ordinamento
-                        this.showModal("Ordinamento", `Hai cliccato sul numero ${obj.valore}`);
+                        // Se l'oggetto è già selezionato, deselezionalo
+                        const index = this.oggettiSelezionati.indexOf(obj);
+                        if (index > -1) {
+                            this.oggettiSelezionati.splice(index, 1);
+                            obj.selezionato = false;
+                        } else {
+                            // Seleziona l'oggetto
+                            this.oggettiSelezionati.push(obj);
+                            obj.selezionato = true;
+                            
+                            // Se abbiamo selezionato 2 oggetti, scambiali
+                            if (this.oggettiSelezionati.length === 2) {
+                                this.scambiaOggetti();
+                            }
+                        }
+                        
+                        this.verificaOrdinamento();
+                        this.render();
                         break;
                     }
+                }
+            }
+
+            scambiaOggetti() {
+                if (this.oggettiSelezionati.length !== 2) return;
+                
+                const [obj1, obj2] = this.oggettiSelezionati;
+                const index1 = this.oggettiOrdinamento.indexOf(obj1);
+                const index2 = this.oggettiOrdinamento.indexOf(obj2);
+                
+                // Scambia le posizioni
+                [this.oggettiOrdinamento[index1], this.oggettiOrdinamento[index2]] = 
+                [this.oggettiOrdinamento[index2], this.oggettiOrdinamento[index1]];
+                
+                // Scambia anche le posizioni x per il rendering
+                const tempX = obj1.x;
+                obj1.x = obj2.x;
+                obj2.x = tempX;
+                
+                // Deseleziona tutto
+                this.oggettiSelezionati.forEach(obj => obj.selezionato = false);
+                this.oggettiSelezionati = [];
+            }
+
+            verificaOrdinamento() {
+                const valoriCorrenti = this.oggettiOrdinamento.map(obj => 
+                    this.ordinamentoSelezionato === "forme" ? obj.dimensioneOrdine : obj.numerosita
+                );
+                
+                const valoriOrdinati = [...valoriCorrenti].sort((a, b) => a - b);
+                
+                // Confronta array per verificare se sono ordinati
+                const isOrdinato = valoriCorrenti.every((val, idx) => val === valoriOrdinati[idx]);
+                
+                if (isOrdinato) {
+                    this.showModal("Complimenti!", "Hai ordinato correttamente! Livello completato!");
+                    setTimeout(() => {
+                        this.avviaNuovoLivelloOrdinamento();
+                    }, 2000);
+                }
+            }
+
+            avviaNuovoLivelloOrdinamento() {
+                this.livelloOrdinamento++;
+                if (this.livelloOrdinamento < 3) { // 3 livelli di ordinamento
+                    this.inizializzaOrdinamento();
+                } else {
+                    this.showModal("Fantastico!", "Hai completato tutti i livelli di ordinamento!");
+                    this.modalitaOrdinamento = false;
+                    this.nextBtn.disabled = false;
                 }
             }
 
@@ -718,6 +861,7 @@
                 this.stelle = [];
                 this.figure = [];
                 this.oggettiOrdinamento = [];
+                this.oggettiSelezionati = [];
 
                 this.initStelle(this.totaleStelle);
                 this.render();
@@ -799,6 +943,7 @@
                 this.raggio = raggio;
                 this.colore = colore;
                 this.identificata = false;
+                this.selezionato = false;
             }
 
             controllaClick(mx, my) {
@@ -812,9 +957,9 @@
                 ctx.arc(this.x + this.raggio, this.y + this.raggio, this.raggio, 0, 2 * Math.PI);
                 ctx.fill();
                 
-                if (this.identificata) {
-                    ctx.strokeStyle = 'black';
-                    ctx.lineWidth = 3;
+                if (this.identificata || this.selezionato) {
+                    ctx.strokeStyle = this.selezionato ? '#ff5722' : 'black';
+                    ctx.lineWidth = this.selezionato ? 4 : 3;
                     ctx.stroke();
                 }
             }
@@ -825,22 +970,44 @@
 
         class Quadrato {
             constructor(x, y, lato, colore) {
-                this.x = x; this.y = y; this.lato = lato; this.colore = colore; this.identificata = false;
+                this.x = x; 
+                this.y = y; 
+                this.lato = lato; 
+                this.colore = colore; 
+                this.identificata = false;
+                this.selezionato = false;
             }
-            controllaClick(mx, my) { return mx >= this.x && mx <= this.x + this.lato && my >= this.y && my <= this.y + this.lato; }
+            
+            controllaClick(mx, my) { 
+                return mx >= this.x && mx <= this.x + this.lato && my >= this.y && my <= this.y + this.lato; 
+            }
+            
             disegna(ctx) {
                 ctx.fillStyle = this.colore;
                 ctx.fillRect(this.x, this.y, this.lato, this.lato);
-                if (this.identificata) { ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeRect(this.x, this.y, this.lato, this.lato); }
+                
+                if (this.identificata || this.selezionato) {
+                    ctx.strokeStyle = this.selezionato ? '#ff5722' : 'black';
+                    ctx.lineWidth = this.selezionato ? 4 : 3;
+                    ctx.strokeRect(this.x, this.y, this.lato, this.lato);
+                }
             }
+            
             calcolaArea() { return this.lato * this.lato; }
             getNome() { return "Quadrato"; }
         }
 
         class Triangolo {
             constructor(x, y, base, colore) {
-                this.x = x; this.y = y; this.base = base; this.altezza = base * 0.866; this.colore = colore; this.identificata = false;
+                this.x = x; 
+                this.y = y; 
+                this.base = base; 
+                this.altezza = base * 0.866; 
+                this.colore = colore; 
+                this.identificata = false;
+                this.selezionato = false;
             }
+            
             controllaClick(mx, my) {
                 // Calcola le coordinate dei vertici del triangolo
                 const v1x = this.x;
@@ -859,6 +1026,7 @@
                 // Il punto è all'interno se la somma delle aree è uguale all'area originale
                 return Math.abs(area1 + area2 + area3 - areaOrig) < 0.1;
             }
+            
             disegna(ctx) {
                 ctx.fillStyle = this.colore;
                 ctx.beginPath();
@@ -867,53 +1035,113 @@
                 ctx.lineTo(this.x + this.base, this.y + this.altezza);
                 ctx.closePath();
                 ctx.fill();
-                if (this.identificata) { ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.stroke(); }
+                
+                if (this.identificata || this.selezionato) {
+                    ctx.strokeStyle = this.selezionato ? '#ff5722' : 'black';
+                    ctx.lineWidth = this.selezionato ? 4 : 3;
+                    ctx.stroke();
+                }
             }
+            
             calcolaArea() { return (this.base * this.altezza) / 2; }
             getNome() { return "Triangolo"; }
         }
 
         class Rettangolo {
             constructor(x, y, larghezza, altezza, colore) {
-                this.x = x; this.y = y; this.larghezza = larghezza; this.altezza = altezza; this.colore = colore; this.identificata = false;
+                this.x = x; 
+                this.y = y; 
+                this.larghezza = larghezza; 
+                this.altezza = altezza; 
+                this.colore = colore; 
+                this.identificata = false;
+                this.selezionato = false;
             }
-            controllaClick(mx, my) { return mx >= this.x && mx <= this.x + this.larghezza && my >= this.y && my <= this.y + this.altezza; }
+            
+            controllaClick(mx, my) { 
+                return mx >= this.x && mx <= this.x + this.larghezza && my >= this.y && my <= this.y + this.altezza; 
+            }
+            
             disegna(ctx) {
                 ctx.fillStyle = this.colore;
                 ctx.fillRect(this.x, this.y, this.larghezza, this.altezza);
-                if (this.identificata) { ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeRect(this.x, this.y, this.larghezza, this.altezza); }
+                
+                if (this.identificata || this.selezionato) {
+                    ctx.strokeStyle = this.selezionato ? '#ff5722' : 'black';
+                    ctx.lineWidth = this.selezionato ? 4 : 3;
+                    ctx.strokeRect(this.x, this.y, this.larghezza, this.altezza);
+                }
             }
+            
             calcolaArea() { return this.larghezza * this.altezza; }
             getNome() { return "Rettangolo"; }
         }
 
-        class OggettoOrdinamento {
-            constructor(x, y, larghezza, altezza, valore) {
+        class GruppoOggetti {
+            constructor(x, y, numerosita, forma, colore) {
                 this.x = x;
                 this.y = y;
-                this.larghezza = larghezza;
-                this.altezza = altezza;
-                this.valore = valore;
+                this.numerosita = numerosita;
+                this.forma = forma;
+                this.colore = colore;
+                this.selezionato = false;
+                this.larghezza = 70;
+                this.altezza = 70;
             }
 
             controllaClick(mx, my) {
-                return mx >= this.x && mx <= this.x + this.larghezza && my >= this.y && my <= this.y + this.altezza;
+                return mx >= this.x && mx <= this.x + this.larghezza && 
+                       my >= this.y && my <= this.y + this.altezza;
             }
 
             disegna(ctx) {
-                // Disegna un rettangolo con il numero
-                ctx.fillStyle = '#4facfe';
+                // Disegna il contenitore
+                ctx.fillStyle = this.selezionato ? '#ffeb3b' : '#f8f9fa';
                 ctx.fillRect(this.x, this.y, this.larghezza, this.altezza);
                 
-                ctx.strokeStyle = '#495057';
-                ctx.lineWidth = 2;
+                ctx.strokeStyle = this.selezionato ? '#ff5722' : '#495057';
+                ctx.lineWidth = this.selezionato ? 3 : 2;
                 ctx.strokeRect(this.x, this.y, this.larghezza, this.altezza);
                 
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold ' + (this.altezza * 0.5) + 'px Arial';
+                // Disegna gli oggetti nel gruppo
+                const spacing = 15;
+                let currentX = this.x + 10;
+                let currentY = this.y + 25;
+                
+                for (let i = 0; i < this.numerosita; i++) {
+                    ctx.fillStyle = this.colore;
+                    
+                    switch(this.forma) {
+                        case "Cerchio":
+                            ctx.beginPath();
+                            ctx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
+                            ctx.fill();
+                            break;
+                        case "Quadrato":
+                            ctx.fillRect(currentX - 6, currentY - 6, 12, 12);
+                            break;
+                        case "Triangolo":
+                            ctx.beginPath();
+                            ctx.moveTo(currentX, currentY - 6);
+                            ctx.lineTo(currentX - 6, currentY + 6);
+                            ctx.lineTo(currentX + 6, currentY + 6);
+                            ctx.closePath();
+                            ctx.fill();
+                            break;
+                    }
+                    
+                    currentX += spacing;
+                    if (currentX > this.x + this.larghezza - 15) {
+                        currentX = this.x + 10;
+                        currentY += 20;
+                    }
+                }
+                
+                // Mostra il numero di elementi
+                ctx.fillStyle = '#495057';
+                ctx.font = 'bold 14px Arial';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(this.valore, this.x + this.larghezza / 2, this.y + this.altezza / 2);
+                ctx.fillText(this.numerosita, this.x + this.larghezza / 2, this.y + this.altezza - 8);
             }
         }
 
